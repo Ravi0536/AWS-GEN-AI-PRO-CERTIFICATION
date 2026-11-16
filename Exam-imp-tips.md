@@ -1,0 +1,779 @@
+# AWS Certified Generative AI Developer – Professional (AIP-C01)  
+### Exam Study Notes & Prep Guidance
+
+These are my personal study notes for the **AWS Certified Generative AI Developer – Professional (AIP-C01)** exam.  
+I passed the exam and earned **Early Adopter** status.
+
+This exam is **closer to Pro-level certifications** in expectations and mindset, but with **less technical depth** than other AWS Pro exams. It is **by far easier than the AWS Certified Advanced Networking – Specialty**, but still legitimately challenging due to gaps in available training material.
+
+The difficulty comes less from memorization and more from **reasoning through GenAI architecture, tradeoffs, cost, security, and operational scenarios**.
+
+## Recommended Prerequisites (Strongly Suggested)
+
+Before attempting **AIP-C01**, you should already be comfortable with:
+
+- **AWS Certified AI Practitioner (AIF-C01)**  
+- **AWS Certified Solutions Architect – Associate (SAA-C03)**  
+
+These should realistically be considered **prerequisites**, not optional prep.  
+Having **other AWS Professional-level certifications** helps significantly, especially for architecture and security-related questions.
+
+## Exam Style & Expectations
+
+Expect many questions framed around tradeoff analysis rather than raw service knowledge, often using wording such as:
+
+- **“Least operationally expensive”**
+- **“Most cost-effective”**
+- **“Simplest to operate at scale”**
+- **“Minimize ongoing maintenance”**
+
+You are frequently asked to choose between multiple *technically valid* solutions, where the correct answer depends on **operational burden, cost, security posture, and long-term maintainability** — not just whether something works.
+
+This exam assumes you already have a **strong, holistic understanding of AWS**, well beyond GenAI-specific services. You are expected to reason confidently about:
+
+- **IAM** (roles, policies, trust relationships)
+- **Service Control Policies (SCPs)**
+- **AWS Config** and governance controls
+- **Networking & security boundaries**
+- **Database options and tradeoffs**
+- **Observability** (CloudWatch, logging, metrics, alarms)
+- **Cost management and operational overhead**
+
+Because of this, having taken **at least one AWS Professional-level exam beforehand** is extremely helpful. The GenAI Developer – Professional exam builds on that architectural and operational mindset rather than teaching it from scratch.
+
+## How to Prepare (High-Level Strategy)
+
+The most effective approach I found:
+
+1. **Learn the material**
+   - Use **AWS Skill Builder** and/or **Udemy** to understand the concepts and services
+2. **Practice exam-style reasoning**
+   - Go through **official practice questions** (Skill Builder currently has the best-quality questions)
+3. **Use AI as a study partner**
+   - Break down questions
+   - Explain *why* answers are right or wrong
+   - Identify architectural patterns and traps
+
+## Useful Links
+
+### Official AWS resources
+- Official Exam Guide – AWS Certified Generative AI Developer – Professional (AIP-C01)  
+  https://d1.awsstatic.com/onedam/marketing-channels/website/aws/en_US/certification/approved/pdfs/docs-aip/AWS-Certified-Generative-AI-Developer-Pro_Exam-Guide.pdf
+
+### AWS Skill Builder (official practice content)
+- Official Bonus Questions (25 questions, via BenchPrep)  
+  https://awscertificationpractice.benchprep.com/app/official-bonus-questions-aws-certified-generative-ai-developer-professional-aip-c01#exams
+
+- Official Practice Question Set (20 questions, via BenchPrep)  
+  https://awscertificationpractice.benchprep.com/app/official-practice-question-set-aws-certified-generative-ai-developer-professional-aip-c01?locale=en-us#exams
+
+- Official Pretest (75 questions) - SkillBuilder Subscription needed !!  
+  https://skillbuilder.aws/learn/24FDAZ9UKG/official-pretest-aws-certified--generative-ai-developer--professional-aipc01--english/
+
+- Domain Walkthrough Question Sets (Domains 1–5)  
+  10 questions total (2 per domain); good step-by-step walkthroughs of **exam-style reasoning**
+
+### Third-party prep
+- Ultimate AWS Certified Generative AI Developer – Professional (Udemy, Frank Kane + Stéphane Maarek)  
+  https://www.udemy.com/course/ultimate-aws-certified-generative-ai-developer-professional  
+  Notes: cleaner organization than Skill Builder; watch at 1.25×+ for efficiency, includes 75 practice questions
+
+## General AI concepts
+
+- **Foundation Model (FM)** – Large pre-trained model provided by AWS or partners, designed to be adapted for multiple downstream use cases.
+- **Fine-Tuning** – Customizing a foundation model by **updating model weights** using **labelled, task-specific training data**.
+- **Continued Pre-Training (CPT)** – Adapting a foundation model using **unlabelled domain-specific data** to extend knowledge without explicit labels.
+- **Low-Rank Adaptation (LoRA)** – Parameter-efficient fine-tuning technique that adds trainable low-rank layers while keeping the base model frozen.
+- **Retrieval-Augmented Generation (RAG)** – Architecture pattern that **retrieves relevant data at inference time** and injects it into the prompt to ground model responses.
+- **Embeddings** – Numerical vector representations of data that capture semantic meaning for **similarity search and retrieval**.
+- **Inference** – The process of invoking a trained model to generate predictions or outputs.
+- **Prompt** – Input text and instructions provided to a foundation model to influence its response.
+- **Prompt Template** – Reusable prompt structure with placeholders that standardizes inputs across requests.
+- **Context Window** – Maximum number of tokens a model can process in a single request, including input, retrieved context, and output.
+- **Tokens** – Units of text processed by a model; **cost, latency, and limits scale with token usage**.
+- **Temperature** – Sampling parameter that controls response randomness; lower values produce more deterministic outputs.
+- **Top_p (Nucleus Sampling)** – Sampling parameter that limits token selection to the smallest set of tokens whose cumulative probability exceeds a threshold.
+- **Hallucination** – Model output that appears coherent but is **not supported by training data or provided context**.
+- **Grounding** – Technique that constrains model responses to **retrieved or supplied data sources** to reduce hallucinations.
+- **Guardrails** – Policy-based controls applied during model invocation to enforce **safety, compliance, and content constraints**.
+- **Human-in-the-Loop (HITL)** – Design pattern where human reviewers validate or correct model outputs for quality or compliance.
+- **Batch Inference** – Asynchronous processing of large volumes of requests optimized for throughput and cost efficiency.
+- **Multi-modal Model** – Foundation model capable of processing or generating multiple data modalities (e.g., text and images).
+- **Vector Store** – Storage system optimized for managing and querying embeddings using similarity search algorithms.
+- **Semantic Search** – Retrieval technique that returns results based on semantic similarity rather than exact keyword matching.
+
+## AWS AI & ML services
+
+### Language & text
+
+- **Amazon Comprehend** – Natural language processing: **sentiment**, **entity/key‑phrase extraction**, **topic modelling** and **custom entities**; includes **Comprehend Medical** for clinical texts. **Custom Classification** oragnized documents into user-defined categories.
+- **Amazon Kendra** – Enterprise document search with connectors; can be used as a retrieval layer in RAG architectures.
+- **Amazon Lex** – Conversational interface (chatbot) service.
+- **Amazon Q** – Generative AI assistant: **Q Business** (with **data connectors**, **plugins**, **Q Apps**) and **Q Developer** for code assistance.
+- **Amazon Textract** – OCR plus extraction of structured data from documents.
+- **Amazon Transcribe** – Speech‑to‑text. Can be improved with **custom vocabularies** (domain-specific words) and **custom language models** (domain specific context). 
+
+### Vision & multimodal
+
+- **Amazon Rekognition** – Image/video analysis with **Custom Labels** and **Custom Moderation** for content safety.
+
+### Safety & governance
+
+- **Amazon Macie** – Detects and classifies **PII** and sensitive data in S3.
+- **Amazon Augmented AI (A2I)** – Human‑in‑the‑loop review of machine learning predictions.  Use for high‑risk GenAI outputs.
+
+### Other AI/ML helpers
+
+- **SageMaker** family – See dedicated section below.
+- **AWS Glue** – Data integration: **Crawlers**, **Data Catalog**, **Studio** and **Data Quality**.  For GenAI pipelines it can extract, transform and load (ETL) data before embedding.
+- **AppFlow** – Managed SaaS data transfer (e.g., Salesforce to AWS).
+
+## Amazon Bedrock
+
+Bedrock is AWS’s managed platform for **foundation models** and GenAI tools.
+
+### Core Bedrock services
+
+- **Model catalog** – Access to multiple foundation models (Titan, Claude, Llama, etc.).  Understand model families and when to choose each.
+- **APIs** – **Completions**, **embeddings**, **agents** and **flows**.
+- **Knowledge Bases (KB)** – Fully managed **RAG pipeline**: ingestion, chunking, embedding, storage and retrieval.  Supports **OpenSearch Serverless**, **Aurora PostgreSQL (pgvector)**, **Neptune Analytics** and **S3 Vectors** as backing stores.
+- **Agents** – Managed systems that call APIs/tools in response to prompts.  You define **action groups** for each tool.  Use **Bedrock Agent Tracing** and **Agent Observability** via CloudWatch for debugging.
+- **Data Automation (BDA)** – Extracts structured data from unstructured sources via **blueprints**.
+- **Batch Inference** – Submit multiple prompts via S3 and retrieve outputs asynchronously.
+- **Cross‑Region Inference** – Distribute inference across multiple regions.
+- **Intelligent Prompt Routing** – Routes requests to different models based on complexity to optimise cost and performance.
+orchestration).
+- **Model/Agent Evaluations** – Evaluate model quality using metrics or custom datasets.
+- **Bedrock Flows** – Visual pipeline orchestration connecting FMs with data sources/tools.
+
+**Rules of Thumb**  
+- Multi-Region Failover → Bedrock cross-Region inference (not traditional Route-53 approach)
+- Multi-Region performance routing → inference profiles
+- Too many requests and must keep the same model with minimal ops → Bedrock cross-Region inference
+- Throttling exceptions -> Provisioned Capacity
+- Dynamic model selection by request complexity → Intelligent Prompt Routing
+- Scanned or image-based documents processing → Bedrock Data Automation
+- Avoid custom OCR / parsing → BDA blueprints
+- Multimodal ingestion before RAG → BDA → Knowledge Base
+- Confluence / SaaS docs as source → Bedrock Knowledge Base managed connector
+- Automatic re-sync on updates → Knowledge Base ingestion jobs
+- Large volumes of prompts or documents or embedding to do  → Bedrock Batch Inference (optimize cost and throughput by processing requests in bulk instead of per-request inference)
+
+### Amazon Bedrock API calls
+
+- **InvokeModel** – Core synchronous inference API; use for standard, low-latency requests.
+- **InvokeModelWithResponseStream** – Streaming inference; use for **real-time token streaming** (chat/UX scenarios).
+- **StartBatchInferenceJob** – Asynchronous, large-scale inference from S3; use when you see **millions of records**, throttling, or idle compute.
+- **RetrieveAndGenerate** – Managed **RAG API** that performs retrieval + generation in one call; **grounds responses in documents to reduce hallucinations** (preferred when custom RAG orchestration isn’t required).
+- **Retrieve** – Retrieval-only operation; use when evaluating or debugging **retrieval quality independently** of generation.
+- **CreateKnowledgeBase / UpdateKnowledgeBase** – Manage Bedrock Knowledge Bases (data sources, vector stores).
+- **CountTokens** – Returns token count without running inference; used for **cost estimation and budgeting**.
+- **CreateGuardrail / ApplyGuardrail** – Define and enforce **policy-based safety controls** on inputs/outputs.
+- **CreateModelEvaluationJob** – Run automated evaluations against datasets for **model comparison and regression testing**.
+- **PutModelInvocationLoggingConfiguration** – Enable prompt/response logging for **auditability and debugging**.
+- **ListFoundationModels / GetFoundationModel** – Discover available models and their capabilities (text, embeddings, multimodal).
+
+**Rules of Thumb**  
+- **Interactive UX** → InvokeModelWithResponseStream  
+- **High-volume/offline** → StartBatchInferenceJob  
+- **Hallucination reduction, no custom RAG** → RetrieveAndGenerate  
+- **Cost estimation** → CountTokens
+- **Latest content grounding** → RetrieveAndGenerate
+
+### Bedrock Guardrails & safety
+
+- **Content filters** – Block harmful content categories (includes prompt attacks, violence, hate speech etc.).
+- **Sensitive‑info filters** – Detect and redact **PII** and other sensitive data.
+- **Denied topics** – Block responses on policy‑defined topics.
+- **Word filters** – Custom blocklists or regex patterns.
+- **Contextual grounding checks** – Ensure answers are grounded in retrieved documents to reduce hallucinations.
+- **Automated reasoning checks** – Enforce logical constraints or policies.
+- **Tiers** – Standard tiers provide improved robustness (typo tolerance, multi‑language support).
+
+### Agents & AgentCore
+
+- **Bedrock Agents** – Provide orchestrated reasoning and tool invocation.  Use **action groups** to define accessible APIs.
+- **Bedrock AgentCore** – Managed runtime to deploy agents at scale; works with any agent framework (including **Strands Agents**).  Includes **AgentCore Gateway** for scalable access to external APIs/tools.
+
+### Bedrock Knowledge Base vs. custom RAG
+
+- Use **Knowledge Bases** when you want a fully managed RAG solution with minimal code.  AWS manages ingestion, embedding and retrieval across supported vector stores.
+- Build **custom RAG** when you need control over chunking, embeddings or storage.  You might integrate **OpenSearch**, **Aurora pgvector**, **Neptune**, **S3 Vectors**, or third‑party vector stores.
+
+## Multi‑agent systems & patterns
+
+- **Orchestrator** – Breaks down tasks and delegates to specialised agents.
+- **Router** – Routes work to appropriate specialised agents.
+- **Synthesiser** – Merges outputs from multiple agents.
+- **Prompt chaining** – Sequence of LLM calls with intermediate prompts; may include **gates** (conditional paths).
+- **Evaluator/optimizer** – One model grades or improves another model’s output.
+
+### Strands Agents vs. AWS Agent Squad
+
+- **Strands Agents** – Lightweight framework for experimentation or custom logic; you manage orchestration and scaling.  Good for prototypes or local workflows.
+- **AWS Agent Squad** – Managed multi‑agent orchestration for production workloads with governance and scaling.  Integrates tightly with Bedrock and AgentCore.  Use when you need secure, auditable, production‑scale agent workflows.
+
+## Model selection & generation parameters
+Choosing the right model family is primarily about **modality**, **output type**, and **operational simplicity**.
+
+### Model types
+- **Text (generation) models** – Text in → text out; use for chat, summarization, reasoning, and code.
+  - Examples: Amazon Titan Text, Anthropic Claude
+- **Embedding models** – Input → vector embeddings; use for semantic search, RAG, clustering.
+  - Examples: Amazon Titan Embeddings (text-only), Titan Multimodal Embeddings
+- **Multi-modal models** – Handle multiple modalities (text + images); use for cross-modal understanding.
+  - Examples: Titan Multimodal Embeddings, multimodal Claude variants (vision-capable)
+
+### Choosing a model
+- **Pure text generation** → Text model (e.g., Claude, Titan Text)
+- **RAG / semantic search** → Embedding model + separate text generation model
+- **Images + text, single vector space required** → **Multimodal embedding model**
+- **Explain images in natural language** → Multimodal text model (vision-capable Claude)
+- **Minimize system complexity** → Prefer a **single model** that satisfies all modalities
+
+## Evaluating model outputs (AWS exam-aligned)
+- **Perplexity** – Measures how well a model predicts the next token; use for **training or fine-tuning evaluation**, not output correctness.
+- **BLEU** – N-gram precision metric; use for **machine translation** against reference text.
+- **ROUGE** – Recall-focused overlap metric; use for **summarization** quality.
+- **BERTScore** – Embedding-based semantic similarity; use for **meaning preservation** in free-form text.
+
+**Rules of thumb:**  
+- **Model training quality** → Perplexity  
+- **Translation** → BLEU  
+- **Summarization** → ROUGE  
+- **Semantic / open-ended text quality** → BERTScore  
+
+**Exam note:** Perplexity does **not** measure hallucinations or grounding; use task-specific metrics or human review for GenAI apps.
+
+### Model Output Tuning
+- Controlled but varied responses → temperature ~0.4–0.6, top-p ~0.7–0.9
+- Highly deterministic / repeatable output → temperature ≤0.2, low top-p
+- Some variation without hallucination risk → moderate temperature + moderate top-p
+- Creative / exploratory generation → temperature ≥0.8, high top-k or top-p
+- Strict response length requirement → response length limits or penalties
+- Prevent rambling → length penalties, not stop sequences
+- Safety- or policy-constrained output → keep temperature moderate, don’t rely on stop tokens
+
+### Bedrock observability  - Which feature answers which debugging question?
+- *PreProcessingTrace*  → What exactly did the agent receive and how was it interpreted? (Detect prompt injection, malformed input, bad normalization)
+- *OrchestrationTrace* → Why did the agent choose this plan / tool / step order? (Debug reasoning paths, branching logic, hallucination root causes)
+- *PostProcessingTrace* → How did the final answer get shaped or filtered? (Formatting issues, redactions, guardrail side effects)
+- *FailureTrace* → Where and why did the agent fail? (API errors, tool timeouts, retries, broken steps)
+- *GuardrailTrace* → What safety rule blocked or modified the response? (PII, toxic content, denied topics)
+- *ModelInvocationInput / Output Trace* → What did the model actually see and return? (Prompt quality, grounding issues, unexpected completions)
+- *CloudWatch metrics* (tokens, latency, errors) → Is the system healthy and scalable? (Throughput, throttling, cost, performance — not reasoning)
+- *Golden dataset comparison* → Is behavior drifting (quality drift) or hallucinating over time? (Regression detection, quality validation)
+
+## ReAct vs Agents vs Flows
+| Aspect | **ReAct (Step Functions)** | **Bedrock Agents** | **Bedrock Flows** |
+|---|---|---|---|
+| What it is | Explicit state-machine reasoning | Model-driven tool use | Visual orchestration |
+| Who controls flow | **You (code / states)** | **Model** | **You (diagram)** |
+| Reasoning visibility | **High (per-step outputs)** | Medium (agent traces) | Medium |
+| Branching | **Deterministic** | Implicit | Explicit (limited) |
+| Auditability | **High** | Medium | Medium |
+| Best fit | Regulated, high-risk decisions | Conversational assistants | Simple pipelines |
+| Determinism | **High** | Medium | Medium |
+| Typical exam use | Investigations, compliance | Chatbots, helpers | Low-code workflows |
+
+### Quick decision guide
+- **Need auditability or guarantees** → **ReAct**
+- **Need autonomy and flexibility** → **Agents**
+- **Need visual, low-code orchestration** → **Flows**
+
+## Quality & Safety Gates in a Production GenAI Pipeline (Training vs Inference)
+
+| Layer question | Applies to | What it protects against | Typical problems | Common AWS tools |
+|---|---|---|---|---|
+| **Is the data structurally sane?** | **Training + Inference** | Garbage input | Empty records, missing fields, unsupported values, schema drift | AWS Glue Data Quality, AWS Glue ETL, AWS Glue Data Catalog |
+| **Is the data safe to use?** | **Training + Inference** | Sensitive or malformed input | PII, PHI, mixed languages, disfluent text | Amazon Comprehend (PII + language detection), AWS Lambda (normalization/masking), Amazon Transcribe (speaker labels, language ID) |
+| **Is the output safe to return?** | **Inference only** | Harmful or non-compliant output | Toxic content, policy violations, leakage | Amazon Bedrock Guardrails, Bedrock content filters |
+| **Is the output correct and useful?** | **Inference (primary)** | Wrong or low-quality answers | Hallucinations, irrelevance, inconsistency | Amazon Bedrock Knowledge Bases, Amazon OpenSearch (vector search), metadata filtering, prompt templates, temperature / top_p |
+
+## PII Detection on AWS — When to Use What
+
+| Service | Where it runs in the pipeline | Applies to | What it’s best at | Typical use cases | When it’s the WRONG choice |
+|---|---|---|---|---|---|
+| **Amazon Bedrock Guardrails** | At model invocation (input + output) | **Inference only** | Preventing PII from reaching or leaving the model | Redact/mask PII in prompts and responses; enforce privacy with minimal code; ensure PII is never returned | Cleaning historical data; batch processing S3 objects; non-GenAI workloads |
+| **Amazon Comprehend** | Before the model (data preprocessing) | **Training + Inference** | Detecting and transforming PII in raw text | Redact PII in transcripts or documents; normalize text before RAG; language detection + entity extraction | Real-time GenAI enforcement; output filtering; zero-code pipelines |
+| **Amazon Macie** | After storage (S3 scanning) | **Training data / at rest** | Discovering sensitive data at rest | Find where PII exists in S3; compliance audits; security posture visibility | Preventing storage of PII; redaction or transformation; inline application flows |
+
+**Rules of Thumb**
+- Guardrails alone ≠ jailbreak defense → Add pre-model classifiers
+- Detect jailbreak intent, not just keywords → Bedrock safety-classifier
+- Block before the model sees the prompt → Lambda pre-processor
+- Defense-in-depth for GenAI → Pre-filter + Guardrails + Monitoring
+- Schema validation + completeness checks → AWS Glue Data Quality
+- Dataset-level validation (not per-record logic) → AWS Glue ETL + Data Quality rules
+- Minimize Code Changes → Likley NOT Lamnda but Guardrails instead
+
+## Rules of Thumb — Agent, Model & RAG Evaluation and Performance
+
+### Core evaluation selection
+- Compare multiple foundation models on the same task → Bedrock Model Evaluations
+- Evaluate RAG end-to-end (retrieval + answer quality) → RAG evaluation (retrieve-and-generate)
+- Evaluate retrieval quality only → RAG evaluation (retrieve-only)
+- Measure correctness, completeness, faithfulness, coherence → Bedrock evaluation jobs (LLM-as-judge)
+- Have ground-truth answers and ideal contexts → Provide reference answers + reference contexts in S3
+- Minimize custom evaluation infrastructure → Use Bedrock evaluation jobs
+
+### Agent-specific evaluation
+- Evaluate agent tool selection, reasoning flow, and final output → Bedrock Agent Evaluations
+- Validate agent behavior across scenarios (happy path + edge cases) → Agent evaluations with predefined prompts
+- Compare agent versions or configurations → Agent evaluations (same inputs, different configs)
+
+### RAG-specific rules
+- Unsure whether errors come from retrieval or generation → Run retrieve-only evaluation first
+- “Is the model using the right documents?” → Retrieve-only RAG evaluation
+- “Is the final answer correct and grounded?” → Retrieve-and-generate RAG evaluation
+- Need citation coverage or document faithfulness metrics → RAG evaluation with reference contexts
+- Tuning chunking, filters, metadata, or index settings → Retrieve-only evaluation before prompt or model changes
+
+### Dataset & workflow clues
+- Prompt or evaluation dataset already in S3 → Bedrock evaluation jobs
+- Pre-production model or agent bake-off → Model Evaluations
+- Repeatable, automated scoring required → Evaluation jobs (not ad-hoc scripts)
+- LLM-as-judge explicitly mentioned → Bedrock evaluation jobs (by definition)
+
+### What NOT to use for quality evaluation
+- Latency, token count, error rate ≠ model quality → Do not use CloudWatch metrics
+- User feedback alone ≠ ground truth → Not sufficient for model comparison
+- Manual review ≠ scalable evaluation → Fails automation and repeatability
+- Operational monitoring ≠ evaluation → CloudWatch is for ops, not correctness
+
+### Supporting services (where they fit)
+- CloudWatch → Operational health (latency, errors, throttling)
+- CloudWatch Synthetics → Endpoint availability and basic response checks (not GenAI quality)
+- Bedrock Guardrails → Safety enforcement, not quality scoring
+- SageMaker Clarify → Bias detection (for training data) and explainability (classification/regression models, not LLM text quality)
+- Amazon Augmented AI (A2I) → Human review for low-confidence or high-risk outputs (quality control, not automated evaluation)
+
+### Fast mental mapping
+- Ops health → CloudWatch
+- Endpoint up/down checks → CloudWatch Synthetics
+- Safety & compliance → Guardrails
+- Retrieval quality → RAG eval (retrieve-only)
+- Answer quality & grounding → RAG eval (retrieve-and-generate)
+- Model or agent comparison → Model / Agent Evaluations
+- Bias & explainability (non-LLM) → SageMaker Clarify
+- Bias in model outputs (inference / generated text) → BOLD
+- User sentiment analysis → Amazon Comprehend
+- Human review loops → Amazon A2I
+- GenAI runtime visibility → CloudWatch Generative AI observability
+- Per-user tracking, cost attribution, or traffic analysis → requestMetadata + CloudWatch Logs Insights
+
+### Memory hooks
+- Quality ≠ latency → Use evaluation jobs
+- CloudWatch tells you how fast; Bedrock eval tells you how right
+- RAG problems require RAG evaluation modes
+- Agents need agent-specific evaluations, not just model evals
+
+## Amazon SageMaker family
+
+- **Data Wrangler** – Visual data preparation.
+- **JumpStart** – Pre‑built models and algorithms; one‑click deployment.
+- **Feature Store** – Centralised feature repository.
+- **Ground Truth / Ground Truth Plus** – Data labelling (Plus = fully managed).
+- **Model Monitor** – Detects data drift and bias.
+- **Clarify** – Explains model predictions and detects bias.
+- **Model Registry** – Stores and versions models for deployment.
+- **ML Lineage Tracking** – Tracks datasets, code and models across experiments.
+- **Neo** – Train once, deploy anywhere (edge devices).
+- **Unified Studio** – End‑to‑end ML IDE.
+- **Pipelines** – Declarative ML workflow orchestration.
+- **MLflow on SageMaker** – Experiment tracking integration.
+
+*Note:*  Use **SageMaker** when you need full control over training or hosting models in a VPC.  Use **Bedrock** when you want managed foundation models and serverless inference.  In the exam, be ready to choose between these options based on requirements such as control vs. convenience, data privacy, cost and supported frameworks.
+
+### DJL (Deep Java Library) 
+- **Used for**: High-throughput LLM inference on SageMaker (multi-GPU)
+- **Key knobs**: Continuous batching, tensor parallelism, replicas
+- **Utilization fix**:
+  - Prompts much shorter than max → **lower max sequence length**
+  - Model fits on fewer GPUs → **reduce tensor parallelism, increase replicas**
+- **Not for**: Training, fine-tuning, evaluation
+**Memory rule**:  
+> Tune **parallelism + sequence length** before adding instances.
+
+## AWS Glue (data prep)
+- **Crawlers** – Discover and infer schema from data sources.
+- **Data Catalog** – Central metadata store for tables and partitions.
+- **Glue Studio** – Visual ETL development environment.
+- **Data Quality** – Rule‑based quality checks and profiling.
+
+Glue can appear in scenarios for **ETL** preceding embeddings or fine‑tuning.
+
+## Glue vs Lake Formation
+
+- **AWS Glue Data Catalog**
+  - Metadata, discovery, lineage, table registration
+  - Answers: *“What data exists?”*, *“Where did it come from?”*
+- **AWS Lake Formation**
+  - Fine-grained data access enforcement (row/column-level)
+  - Answers: *“Who can query which columns/rows?”*
+
+**Rule of thumb**
+- Knowing what data exists* → Glue
+- Controlling who can access it → Lake Formation
+- S3 Fine grained permissions → Lake Formation 
+
+## Model Context Protocol (MCP)
+- **MCP** – Standardized protocol that lets LLM agents call external tools safely and consistently.
+- **Purpose** – Decouples agent reasoning from tool implementation; agents speak **tools**, not REST.
+- **What MCP standardizes** – Tool schemas, inputs, outputs, and invocation semantics (not compute).
+- **Security & safety** – Enables strict argument validation, input constraints, and safer tool execution.
+- **Deployment model** – Each MCP server is deployed independently on compute that matches the tool’s workload.
+
+**Design rules (exam-relevant):**
+- Use **one MCP server per tool or closely related toolset** for clear boundaries and blast-radius control.
+- Put an **MCP boundary in front of external or fragile APIs** (rate limits, strict schemas, side effects).
+- Avoid letting agents directly call raw REST APIs.
+- MCP is about **interface consistency**, not orchestration (that’s Agents / Step Functions).
+
+## GenAI Security
+
+### Identity & Access
+- Enterprise users (AD / Entra ID) → IAM Identity Center + SAML / OIDC
+- Department / OU isolation → Permission sets + IAM conditions (bedrock:ModelId)
+- Org-wide hard enforcement → SCPs (deny unapproved models regardless of IAM)
+- Least privilege → IAM policy conditions > app-layer controls
+
+### Network Security
+- Private subnet access → VPC Interface Endpoint (PrivateLink)
+- Enforce no public internet → SCP or IAM condition requiring VPC endpoint
+- Exam trap → never NAT, ALB, or proxy Bedrock for “private-only” access
+
+### Model & Content Controls
+- Inference-time safety → Bedrock Guardrails (topics, PII, denied content)
+- Guardrail tuning & insight → enable guardrail tracing
+- Pre-model analysis (optional) → Lambda + Comprehend
+- Post-inference workflows → EventBridge + Lambda (not primary control)
+
+### Audit & Observability
+- Who invoked which model → CloudTrail (Bedrock API calls)
+- Why content was blocked → Guardrail tracing + CloudWatch metrics
+- Org-wide visibility → central logging once, not per app
+
+### Governance Patterns (Exam Favorites)
+- Restrict allowed models → SCP with bedrock:ModelId condition
+- Cross-account consistency → Identity Center permission sets
+- Compliance documentation → model cards (SageMaker Model Registry)
+- What not to do → custom auth proxies, per-account IAM users, prompt-only controls
+
+## AI data stores & vector databases
+
+### OpenSearch
+
+- **Search & analytics engine** (not OLTP) with vector capabilities.
+- **Vector search** types:
+  - **Exact nearest neighbour (NN)** – High precision, slower.
+  - **Approximate NN (ANN)** – Trade recall for speed.  Two key algorithms:
+    - **HNSW (Hierarchical Navigable Small World)** – High recall and low latency; uses more RAM.  Good for low‑latency, high‑quality search.
+    - **IVF (Inverted File)** – Good for very large datasets; allows recall‑speed tuning.
+- **Neural plugin** – Built‑in embedding and search pipelines (simplifies RAG).
+
+*When to use:*  Choose **HNSW** for performance‑critical queries; choose **IVF** for extremely large datasets or when memory savings are important.
+
+#### OpenSearch Optimization (Vector & RAG workloads)
+
+- **Shard strategy**
+  - Prefer **fewer, larger shards** for vector-heavy semantic search
+  - Too many shards increase query fan-out and latency
+- **Hierarchical index design**
+  - Use a lightweight **router index** (e.g., product line, topic, tenant)
+  - Route queries to one or a few **detailed vector indices**
+  - Reduces search space and cost for ANN queries
+- **Index-level optimizations**
+  - Tune **HNSW parameters** (ef_search, ef_construction) for recall vs latency
+  - Separate **hot vs cold indices** when access patterns differ
+  - Use **metadata filters** to narrow candidate vectors before ANN
+- **Query patterns**
+  - Prefer **hybrid search** (keyword + vector) for better relevance
+  - Cache frequent queries upstream when possible
+
+- Natural language queries → Neural search
+- Semantic similarity required → Dense vectors
+- Exact terms or identifiers matter → Sparse (BM25)
+- Mixed technical + natural language content → Sparse + Dense hybrid
+- Relevance tuning or scoring mentioned → Hybrid
+- If unsure → Hybrid
+- If hybrid unavailable → Dense
+
+#### OpenSearch Neural Plugin 
+- Use when you want OpenSearch to accept **raw text queries** and generate embeddings internally (no client-side embedding code).
+- Pick when you want **OpenSearch ingest/search pipelines** to call **Bedrock embedding models directly** via a connector.
+- Good fit when you already operate OpenSearch and want **DIY RAG** without Bedrock Knowledge Bases.
+- Use for **custom indexing logic** or **hybrid search** (keyword + vector) tightly coupled to OpenSearch.
+- Prefer over Knowledge Bases when you need **full control over indices, shard strategy, and query DSL**.
+- Avoid when you want **minimal ops / managed RAG** → use Bedrock Knowledge Bases instead.
+- Avoid if embeddings are generated elsewhere and stored directly → Neural plugin adds no value.
+
+##### Rules of thumb
+- Managed RAG, minimal plumbing → Bedrock Knowledge Bases  
+- OpenSearch-centric RAG with text-in / vector-out handled by OpenSearch → Neural Plugin  
+- Client controls embeddings explicitly → No Neural Plugin
+
+### S3 Vectors
+
+- Lowest‑cost vector store; managed via S3.  Suitable for large, cold datasets.  AWS often recommends combining **S3 Vectors** for bulk storage with **OpenSearch** for hot, low‑latency queries.
+
+### Aurora pgvector
+
+- Amazon Aurora (PostgreSQL) supports the **pgvector** extension.  Use for small/medium datasets when you need SQL capabilities alongside vector similarity search.  Supports **HNSW** and **IVF** indices.
+
+## ElastiCache & MemoryDB
+- **ElastiCache (Valkey)** – Provides in‑memory vector search for ultra‑low‑latency queries. (more setup needed then ElasticCache)
+- **MemoryDB** – Durable, in‑memory vector store; fully managed and designed for high‑throughput workloads.
+
+### DynamoDB
+
+- Not used for vectors but valuable for storing **session state**, **metadata** and **conversation memory**.
+
+#### DynamoDB Tips (usage for chat history)
+- Chat history + scale → DynamoDB
+- Resume conversations → conversationId as partition key
+- Metadata filtering → GSI
+- Hot recent reads → DAX
+- Automatic retention → TTL
+- Avoid cron deletes → TTL beats scheduled jobs
+- If it smells like state, not search → not OpenSearch
+
+### Pinecone
+
+- **Pinecone** – Managed, serverless vector database that automatically scales and offers simple APIs.  It integrates with AWS services and Bedrock Knowledge Bases as an external vector store option.  Use **Pinecone** when you need hassle‑free setup, auto‑scaling and multi‑cloud portability; choose AWS‑native stores for tighter integration, lower latency within AWS and potentially lower cost.
+
+### MongoDB Atlas (Vector Search)
+
+- **MongoDB Atlas Vector Search** – Managed vector search built into MongoDB Atlas.
+- Supports hybrid use cases: **document store + vector search** in one system.
+  
+### Vector store selection summary
+- **OpenSearch** – Best general‑purpose engine for high‑performance RAG.
+- **S3 Vectors** – Cheapest storage for large collections.
+- **Aurora pgvector** – SQL + vectors for moderate datasets.
+- **MemoryDB** – Ultra‑fast, in‑memory search.
+- **Pinecone** – Managed, serverless and auto‑scaling; good for ease of use and cross‑cloud portability.
+- **MongoDB Atlas** – Document DB + vector search in one platform.
+
+### RAG Relevance Optimization 
+- Too many relevant docs, best ones ranked low → **Rerankers**
+- Poor recall with vector-only search → **Hybrid search (vector + keyword)**
+- Want fastest improvement, least infra → **Knowledge Bases + OpenSearch + Bedrock rerankers**
+- Avoid custom ranking logic unless explicitly required
+
+### Rules of Thumb
+- Default RAG on AWS → Bedrock Knowledge Bases
+- Documents already in S3 → S3-backed Knowledge Base
+- Minimal ops / no ingestion code → Knowledge Base + StartIngestionJob
+- Need metadata filtering → metadata.json with Knowledge Base
+- Automatic index sync on S3 changes → S3 event → StartIngestionJob
+- Avoid cluster management → OpenSearch Serverless
+- DIY pgvector → Only if you need SQL semantics outside RAG
+- Search engine + high QPS + strict latency requirements → Amazon OpenSearch (provisioned)
+- Need fine-grained relevance tuning (boosts, hybrid scoring, ranking logic) → Amazon OpenSearch (sparse + dense hybrid)
+- Managed RAG with minimal infrastructure and glue code → Amazon Bedrock Knowledge Bases
+- Enterprise document search with built-in connectors and managed relevance → Amazon Kendra
+- Serverless search with lower operational overhead but fewer tuning knobs → Amazon OpenSearch Serverless
+- Return snippets, highlights, and document references at scale → Traditional search engine (OpenSearch/Kendra), not pure RAG
+- RAG for answer generation, not search ranking → Bedrock Knowledge Bases
+- Need to tune relevance independently of the FM → Search layer (OpenSearch/Kendra), not the model
+
+#### Metadata & filtering:
+- Simple metadata filtering → metadata.json in Knowledge Base
+- Per-document attributes (tenant, product, region) → metadata.json
+- RAG explainability / traceability → propagate metadata into embeddings
+- Access control via retrieval filters → metadata-based filtering (not IAM)
+- Need complex joins or relational filters → Aurora pgvector (not Knowledge Bases)
+- Need per-tenant isolation at index level → separate Knowledge Bases or vector stores
+
+## Chunking, embeddings, and vector stores
+
+### Core concepts (mental model)
+- **Underlying data source** – Original document (PDF, HTML, DOCX, Confluence page, etc.).
+- **Chunk** – Logical text segment extracted from the source and embedded.
+- **Vector** – Numerical embedding that represents a chunk in the vector store.
+- **Metadata** – Key–value attributes attached to a chunk/vector (e.g., tenant, source, product, section).
+- **Retrieved chunk** – Text returned at query time; may include **more surrounding context** than the exact vector span.
+
+### Chunking strategies (high-yield)
+- **Default chunking** – ~**300 tokens** with overlap; good general-purpose default.
+- **Overlap** – Repeats a portion of adjacent chunks to avoid cutting off meaning at boundaries.
+- **Semantic chunking** – Splits by meaning (sentences/sections) instead of fixed size; improves retrieval quality for structured text.
+- **Hierarchical chunking**
+  - Embed **small child chunks** for precise matching
+  - Return **larger parent chunks** at retrieval time for richer context
+  - Reduces total tokens sent to the FM while preserving local context
+- **When documents are well-structured** (headings/sections) → hierarchical or semantic chunking
+
+**Exam rule:**  
+- Poor answers ≠ bad model → often **bad chunking**
+
+### Chunking vs vector store behavior
+- Vector stores index **vectors**, not raw text.
+- Retrieval returns **associated text + metadata**, not just the vector span.
+- Metadata filtering reduces the candidate set **before ANN search**, improving relevance and performance.
+
+### Metadata in Bedrock Knowledge Bases
+- **metadata.json** – Optional file that accompanies documents in a Knowledge Base.
+- Used to attach **structured attributes** (tenant, product, region, doc type, ACL hints) to each chunk.
+- Enables:
+  - **Metadata-based filtering** during retrieval
+  - **Access control at retrieval time** (not IAM)
+  - **Explainability / traceability** (why this chunk was returned)
+- Metadata is stored **with embeddings** and travels through retrieval.
+
+**Exam gotchas:**
+- Metadata is **optional**, but required for filtering and multi-tenant RAG.
+- Metadata filtering ≠ Guardrails and ≠ IAM.
+- IAM controls access to the KB; metadata controls **what gets retrieved**.
+
+### Chunking & RAG rules of thumb
+- Large documents, generic answers → increase chunk size
+- Precise questions, factual lookup → smaller chunks + overlap
+- Need surrounding context → hierarchical chunking
+- Multi-tenant or scoped retrieval → metadata.json
+- Hallucinations with “correct” retrieval → chunking strategy issue, not model choice
+
+## Orchestration & workflows
+
+- **AWS Step Functions** – Orchestrates stateful workflows.  Often used to chain data ingestion, embedding, calling FMs, and storing outputs.
+- **Lambda** – Event‑driven compute; used for chunking text, generating embeddings or gluing services together.
+- **API Gateway** – Exposes a REST/HTTP interface for your GenAI application.
+- **EventBridge** – Bus for event‑driven architectures.
+- **AppConfig** – For runtime **feature flags** and dynamic model selection; can be used to switch FMs based on criteria.
+
+## Security & governance patterns
+
+- **Threats:**  **Prompt injection**, **data exfiltration**, **tool misuse**.  Always sanitise user inputs, restrict tool access and implement guardrails.
+- **Least privilege:**  Use fine‑grained **IAM policies**, role assumption and scoped credentials.  For multi‑tenant systems, isolate per‑tenant data sources and encryption keys.
+- **Encryption:**  Use **KMS** for data at rest; enforce **TLS** in transit; store embeddings in encrypted buckets or databases.
+- **Network isolation:**  Use **VPC endpoints/PrivateLink** to call Bedrock or SageMaker privately; configure security groups and subnets.
+- **Auditability:**  Log prompts, responses and tool invocations via **CloudWatch** and **AWS CloudTrail**.
+- **Guardrails & A2I:**  For high‑risk tasks, implement content filters and send outputs for **human review**.
+
+## System Resiliency Patterns (GenAI workloads)
+
+- **Chain-of-Thought instructions**
+  - Encourage structured reasoning for complex tasks
+  - Improves accuracy and consistency (use carefully; avoid exposing reasoning verbatim)
+- **Retry & failure handling**
+  - **Exponential Backoff** for transient model or service failures
+  - **Circuit Breaker pattern** to prevent cascading failures
+    - Common implementation: **Step Functions + DynamoDB**
+- Goal: **graceful degradation**, not hard failure, when models or downstream services misbehave
+
+## Humans in the Loop (HITL) & Quality Control
+
+- **Human Augmentation** → AI drafts, humans refine (review/edit before final output).
+- **Escalation Criteria** → Route uncertain cases (e.g., low confidence scores) to human experts.
+- **User feedback loop**
+  - Collect via **API Gateway**
+  - Store/index in **DynamoDB**
+  - Use to measure **model/variant preference** and drive continuous improvement
+- Common use cases:
+  - Regulated decisions
+  - Ambiguous classifications
+  - High-impact outputs where correctness > latency
+
+## Designing RAG pipelines
+
+1. **Ingest & chunk:**  Use **Glue**, **Lambda**, or custom scripts to extract data from documents, chunk text (size/overlap matters for recall), and pre‑process.
+2. **Generate embeddings:**  Use Bedrock **embedding APIs** or frameworks like SentenceTransformers; decide on vector dimension.
+3. **Store embeddings:**  Choose a vector store (OpenSearch, S3 Vectors, Aurora, Pinecone, etc.) based on dataset size and latency requirements.
+4. **Retrieve relevant chunks:**  Perform **vector search** (may combine with keyword search for hybrid retrieval).
+5. **Ground responses:**  Provide retrieved context to the FM with instructions to use only that information; enforce via guardrails and grounding checks.
+6. **Evaluate & refine:**  Use evaluation datasets, human feedback and metrics (BERTScore, ROUGE) to iterate and catch hallucinations.
+
+## Multi‑tenant GenAI considerations
+
+- **Tenant isolation:**  Separate data sources, embeddings and encryption keys per tenant; filter queries by tenant ID.
+- **Per‑tenant access control:**  Enforce IAM and RBAC at retrieval and tool layers.
+- **No cross‑tenant training:**  Do not mix tenant data in fine‑tuning unless explicit permission.
+- **Observability:**  Monitor usage and errors by tenant; alert on anomalies.
+
+## General Tips
+
+- Change FM model **without code changes** → AWS AppConfig or Bedrock Intelligent Prompt Routing / Router Agent
+- Evaluate RAG quality end-to-end → Bedrock Model Evaluations with retrieve-and-generate evaluation jobs
+- Score correctness, completeness, faithfulness, coherence → Evaluator model (LLM-as-a-judge)
+- Well-defined steps, branching logic, auditable execution → AWS Step Functions
+- Track trained model versions and approvals → Amazon SageMaker Model Registry
+- Track prompt templates with versioning, approval workflows → Amazon Bedrock Prompt Management
+- Auditable history of API access → AWS CloudTrail
+- Show data source origin, schema, lineage → AWS Glue Data Catalog
+- One-off or exploratory data cleanup (UI-driven) → SageMaker Data Wrangler
+- Automated or recurring data cleanup → AWS Glue ETL
+- Detect and monitor bias or explain predictions (training data / not prompt) → Amazon SageMaker Clarify
+- Enforce model version governance and documentation → SageMaker model governance (Model Registry + model cards)
+- Knowledge Base ingestion troubleshooting → CloudWatch Logs + Logs Insights
+
+### Bedrock Model Evaluation
+1. **Define evaluation metrics** → correctness, completeness, faithfulness, fluency
+2. **Prepare evaluation dataset (S3)** → prompts + reference answers (and reference contexts for RAG)
+3. **Run Bedrock Model Evaluation jobs**  → use **LLM-as-a-judge (evaluator model)** to score outputs automatically
+4. **Apply quality gates** → thresholds + approval workflow via **AWS Step Functions**
+5. **Finalize decision with evaluation report** → compare models (baseline vs candidate) and approve promotion
+
+**Key rules of thumb**
+- **Automated scoring** → Bedrock Model Evaluations (not CloudWatch, not manual review)  
+- **Correctness / faithfulness metrics** → Evaluator FM (LLM-as-judge)  
+- **Human approval required** → Step Functions gate (not just dashboards)  
+- **RAG evaluation** → use *retrieve-and-generate* jobs, not retrieve-only
+
+### Bedrock Guardrails Observability
+- Detect interventions → InvocationIntervened metric
+- Identify input vs output trigger → GuardrailContentSource
+- Identify exact policy fired → Guardrail tracing + GuardrailPolicyType
+- Tune guardrails safely → Tracing required
+- Explain customer-facing blocks → Tracing (not metrics alone)
+- Test guardrails offline → Model Evaluation jobs
+
+### Data, Governance, and Auditability
+- **Custom domain rule checking** → AWS Lambda
+- **Auditable access** → CloudTrail + IAM (not custom application logs)
+- **Tracking S3 data sources and lineage** → AWS Glue Data Catalog
+- **Regulated industries** → Glue Data Catalog, CloudTrail, metadata tags, IAM-based access control
+- **Data cleaning, PII masking, intent classification before LLMs** → **AWS Lambda + Amazon Comprehend** (**not Guardrails, not Macie**)
+  - **Exam gotcha:** On most AWS exams, PII → **Macie**. In Bedrock / GenAI flows, **pre-model PII → Comprehend**.
+- **Blocking malformed, abusive, or obviously malicious requests** → **Amazon API Gateway**
+  - Use when the question mentions **“before backend services”**, **“request validation”**, or **“first line of defense”**
+  - API Gateway handles **structure & pattern enforcement**, not semantic understanding
+  - **Never replaces** Comprehend or Guardrails
+    
+- **Rule:**  
+  **At the edge / before compute** → API Gateway (schema, size, regex, allow/deny)  
+  **Before the model** → Lambda + Comprehend (PII + intent)  
+  **At invocation** → Guardrails (LLM behavior & output)  
+  **At rest** → Macie
+
+### Networking and Security
+- **Secure private service access** → VPC endpoints / PrivateLink  
+- **On-prem execution** → AWS Outposts  
+- **5G / edge workloads** → AWS Wavelength  
+
+### RAG Quality, Explainability, and Caching
+- **RAG explainability** → propagate metadata into embeddings  
+- **Reduce hallucinations** → RetrieveAndGenerate with Bedrock Knowledge Bases  
+- **Retrieve-only RAG evaluation** → measure retrieval quality independent of generation  
+- **Hierarchical chunking** → small child chunks for search, return larger parent chunks for context  
+- Use hierarchical chunking when documents are **sectioned** and answers need surrounding context  
+
+### Performance and Cost Optimization
+- **Massive datasets + throttling + idle compute** → use Bedrock Batch Inference (not InvokeModel)  
+- **Static or repeated prompt content** → Bedrock prompt caching  
+- **Identical public requests** → CloudFront edge cache  
+- **Similar but not identical requests** → semantic cache  
+
+### Streaming and Real-Time Use Cases
+- **Real-time token streaming + serverless** → API Gateway WebSocket + Lambda  
+- **High-volume real-time ingestion** → Kinesis Data Streams  
+- **Near-real-time delivery** → Kinesis Firehose  
+
+### Agents and Tooling
+- **Agents should not speak REST**  
+- If agents call strict or mutable external APIs → place an **MCP tool boundary** in front  
+- Validate arguments **before** calling the external API  
+- **MCP standardizes interfaces, not compute** → deploy each MCP server on compute that matches workload  
+
+### Data Movement
+- **Large data transfers (on-prem ↔ AWS or AWS ↔ AWS)** → AWS DataSync  
