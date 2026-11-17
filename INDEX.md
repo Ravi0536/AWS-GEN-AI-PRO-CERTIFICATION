@@ -23,7 +23,7 @@ One page to reach any section. Every domain document also starts with its own Co
 | Domain 5: Testing, Validation, and Troubleshooting (11%) | [05-Domain5-Testing-Validation-Troubleshooting.md](05-Domain5-Testing-Validation-Troubleshooting.md) |
 | Service list: what is in scope and when to use it | [06-Service-List-When-to-Use.md](Deep_dives/06-Service-List-When-to-Use.md) |
 | API list: which API does which job | [07-API-List-by-Task.md](Deep_dives/07-API-List-by-Task.md) |
-| Service deep dives (Comprehend custom classification) | [Deep_dives/Deep_dive_services.md](Deep_dives/Deep_dive_services.md) |
+| Deep dives (Comprehend custom classification; per-tenant cost tracking) | [Deep_dives/Deep_dive_services.md](Deep_dives/Deep_dive_services.md) |
 | Architecture diagrams (draw.io, 12 pages) | [diagrams/AIP-C01-Architectures.drawio](diagrams/AIP-C01-Architectures.drawio) |
 | Topics to revisit (your running list) | [REVISIT-Topics.md](REVISIT-Topics.md) |
 
@@ -41,7 +41,7 @@ Exam-wide: [Exam facts](00-Exam-Strategy-and-Question-Patterns.md#1-exam-at-a-gl
 
 Services and APIs: [Bedrock](Deep_dives/06-Service-List-When-to-Use.md#1-amazon-bedrock) · [SageMaker AI](Deep_dives/06-Service-List-When-to-Use.md#2-amazon-sagemaker-ai) · [SageMaker named services](Deep_dives/06-Service-List-When-to-Use.md#3-sagemaker-named-services) · [Glue](Deep_dives/06-Service-List-When-to-Use.md#4-aws-glue) · [Lex](Deep_dives/06-Service-List-When-to-Use.md#7-amazon-lex) · [Amazon Q](Deep_dives/06-Service-List-When-to-Use.md#8-amazon-q-and-related-assistants) · [Other AI and ML services](Deep_dives/06-Service-List-When-to-Use.md#9-other-ai-and-ml-services-in-scope) · [Not in scope](Deep_dives/06-Service-List-When-to-Use.md#11-ai-and-ml-services-that-are-not-in-scope) · [Look-alike services](Deep_dives/06-Service-List-When-to-Use.md#13-look-alike-services-and-how-to-split-them) · [Client map](Deep_dives/07-API-List-by-Task.md#1-client-map-build-time-and-run-time) · [API chains by exam task](Deep_dives/07-API-List-by-Task.md#16-api-chains-by-exam-task) · [API pairs](Deep_dives/07-API-List-by-Task.md#17-api-pairs-the-exam-contrasts) · [IAM actions](Deep_dives/07-API-List-by-Task.md#18-iam-actions-and-condition-keys)
 
-Deep dives: [Comprehend custom classification](Deep_dives/Deep_dive_services.md#1-amazon-comprehend-custom-classification) · [When to use it and when not to](Deep_dives/Deep_dive_services.md#110-when-to-use-it-and-when-not-to) · [Worked examples](Deep_dives/Deep_dive_services.md#111-worked-examples) · [Practice questions](Deep_dives/Deep_dive_services.md#114-practice-questions)
+Deep dives: [Comprehend custom classification](Deep_dives/Deep_dive_services.md#1-amazon-comprehend-custom-classification) · [When to use it and when not to](Deep_dives/Deep_dive_services.md#110-when-to-use-it-and-when-not-to) · [Worked examples](Deep_dives/Deep_dive_services.md#111-worked-examples) · [Practice questions](Deep_dives/Deep_dive_services.md#114-practice-questions) · [Per-tenant cost tracking with inference profiles](Deep_dives/Deep_dive_services.md#2-per-tenant-cost-tracking-with-application-inference-profiles) · [Cost tracking practice questions](Deep_dives/Deep_dive_services.md#27-practice-questions)
 
 ## By exam task
 

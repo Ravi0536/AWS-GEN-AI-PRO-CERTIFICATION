@@ -1,6 +1,6 @@
 # AIP-C01 — Service Deep Dives
 
-In-depth notes for single services: how the feature works, the details that decide exam questions, worked examples and practice questions. One numbered section per service; new deep dives are added at the bottom.
+In-depth notes for single services and patterns: how the feature works, the details that decide exam questions, worked examples and practice questions. One numbered section per topic; new deep dives are added at the bottom.
 
 Back to the [index](../INDEX.md) · [Service list](06-Service-List-When-to-Use.md) · [API list](07-API-List-by-Task.md)
 
@@ -23,6 +23,16 @@ Back to the [index](../INDEX.md) · [Service list](06-Service-List-When-to-Use.m
   - [1.14 Practice questions](#114-practice-questions)
   - [1.15 Rapid recall](#115-rapid-recall)
   - [1.16 Sources](#116-sources)
+- [2. Per-tenant cost tracking with application inference profiles](#2-per-tenant-cost-tracking-with-application-inference-profiles)
+  - [2.1 The scenario](#21-the-scenario)
+  - [2.2 Architecture](#22-architecture)
+  - [2.3 Why each answer is right](#23-why-each-answer-is-right)
+  - [2.4 Options that look right and are not](#24-options-that-look-right-and-are-not)
+  - [2.5 How to build it](#25-how-to-build-it)
+  - [2.6 Details that decide a harder version](#26-details-that-decide-a-harder-version)
+  - [2.7 Practice questions](#27-practice-questions)
+  - [2.8 Rapid recall](#28-rapid-recall)
+  - [2.9 Sources](#29-sources)
 
 ---
 
@@ -518,3 +528,182 @@ They also combine: classifier first, FM only for low-confidence cases. That is t
 - [Feature availability change](https://docs.aws.amazon.com/comprehend/latest/dg/comprehend-availability-change.html)
 
 Related notes: [Comprehend features, when to use it, when not to](../REVISIT-Topics.md#8-amazon-comprehend-features-when-to-use-it-when-not-to) · [Comprehend APIs](07-API-List-by-Task.md#10-amazon-comprehend) · [Domain 1 Task 1.6](../01-Domain1-FM-Integration-Data-Compliance.md#task-16--prompt-engineering-and-governance) · [Domain 2 Task 2.4](../02-Domain2-Implementation-Integration.md)
+
+---
+
+## 2. Per-tenant cost tracking with application inference profiles
+
+A multi-tenant pattern: many tenants (clinics, teams, customers) share one Bedrock model on demand, and the business wants the model cost split per tenant. The answer is one **application inference profile per tenant, tagged with the tenant ID**. The practice question that prompted this note pairs it with a second decision: how an S3 upload starts a Step Functions workflow.
+
+### 2.1 The scenario
+
+Paraphrased from a practice question:
+
+- A medical company runs a Step Functions workflow with two Lambda functions. The first transcribes clinic audio with Amazon Transcribe Medical. The second summarizes the transcript with Amazon Nova Pro on Bedrock.
+- New clinics are being onboarded, each with a unique clinic ID.
+- Requirements: store every clinic's data in **one shared S3 bucket** with the **clinic ID as the key prefix**, and **track summarization cost per clinic**, most cost-effectively.
+
+**Correct combination**
+
+1. Create a Bedrock inference profile for each clinic ID, and have the summarization function choose the profile from the S3 key prefix.
+2. Create an EventBridge rule that captures the upload events and targets the Step Functions state machine.
+
+**Where it sits in the exam:** not named in a skill statement. Cost attribution fits Domain 4, Task 4.3 (Skill 4.3.2, token usage monitoring). The trigger fits Domain 2, Task 2.3 (Skill 2.3.2, EventBridge for event-driven integrations).
+
+### 2.2 Architecture
+
+```mermaid
+graph LR
+    C([Clinic upload]) -->|PutObject| S3[(Shared S3 bucket<br/>key prefix = clinic ID)]
+    S3 -->|Object Created event| EB[EventBridge rule]
+    EB -->|StartExecution| SFN[Step Functions]
+    subgraph Workflow
+        SFN --> T[Lambda: transcribe<br/>Transcribe Medical]
+        T --> SUM[Lambda: summarize<br/>reads clinic ID from key]
+    end
+    SUM -->|modelId = profile ARN| PA[Inference profile<br/>tag clinic = A]
+    SUM -->|modelId = profile ARN| PB[Inference profile<br/>tag clinic = B]
+    PA --> NOVA[Nova Pro on Bedrock]
+    PB --> NOVA
+    PA -.->|cost allocation tag| CE[Cost Explorer<br/>spend by clinic]
+    PB -.->|cost allocation tag| CE
+```
+
+**Flow:** the upload lands under the clinic's prefix. S3 sends an Object Created event to EventBridge. The rule starts the state machine. The summarize function takes the clinic ID from the key, picks that clinic's profile and passes its ARN as the model ID. Bedrock bills the usage against the profile's tag.
+
+### 2.3 Why each answer is right
+
+| Requirement in the stem | Mechanism | Why it is the cheapest correct choice |
+|---|---|---|
+| "Track summarization costs for each clinic" | `CreateInferenceProfile` per clinic with a clinic tag, copied from the Nova Pro model or its cross-Region profile; pass the profile ARN as `modelId` | On-demand usage has no resource to tag. The profile is that resource. Activate the tag as a cost allocation tag and Cost Explorer splits the spend. No log parsing and no custom metering |
+| Shared bucket, clinic ID as the key prefix | The Lambda function reads the prefix from the event to choose the profile | One bucket; no bucket or pipeline per clinic |
+| Start the existing workflow on upload | S3 sends events to EventBridge; a rule on Object Created targets the state machine | S3 event notifications have four destinations: SNS, SQS, Lambda and EventBridge. Step Functions is not one of them, so the rule removes the need for a starter Lambda function or polling |
+
+### 2.4 Options that look right and are not
+
+| Distractor | Why it fails |
+|---|---|
+| Tag the Lambda function or the state machine per clinic | Tags the compute cost, not the Bedrock model charges |
+| Provisioned Throughput per clinic | Pays for dedicated capacity per tenant; the opposite of cost-effective |
+| Model invocation logging plus Athena or Logs Insights to sum tokens by clinic | Works, but adds storage, queries and code to maintain |
+| A bucket, an account or a state machine per clinic | Contradicts "shared bucket" and multiplies resources |
+| A Lambda function triggered by S3 that calls `StartExecution` | Works, but is an extra component to pay for and maintain |
+| A CloudTrail trail with S3 data events to detect uploads | Data events are charged and slower; S3 can send to EventBridge directly |
+| A cross-Region (system-defined) inference profile alone | Gives throughput and resilience, not per-tenant cost attribution |
+
+### 2.5 How to build it
+
+**Step 1: one profile per clinic.** The profile copies from the foundation model (one Region) or from a cross-Region profile (several Regions).
+
+```bash
+aws bedrock create-inference-profile \
+  --inference-profile-name clinic-a-summarize \
+  --model-source '{"copyFrom": "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0"}' \
+  --tags '[{"key": "clinicId", "value": "clinic-a"}]'
+```
+
+The response returns an ARN of the form `arn:aws:bedrock:REGION:ACCOUNT:application-inference-profile/ID`.
+
+**Step 2: turn on EventBridge notifications for the bucket,** then add a rule. The key-prefix filter is optional; without it one rule covers every clinic.
+
+```json
+{
+  "source": ["aws.s3"],
+  "detail-type": ["Object Created"],
+  "detail": {
+    "bucket": { "name": ["clinic-audio-shared"] }
+  }
+}
+```
+
+The rule's target is the state machine, with an IAM role that allows EventBridge to start executions.
+
+**Step 3: choose the profile in the summarize function.**
+
+```python
+clinic_id = object_key.split("/")[0]            # "clinic-a/2026/11/visit-17.wav"
+profile_arn = profile_map[clinic_id]            # from AppConfig, DynamoDB or a parameter
+response = bedrock_runtime.converse(
+    modelId=profile_arn,                         # the profile ARN replaces the model ID
+    messages=[{"role": "user", "content": [{"text": prompt}]}],
+)
+```
+
+**Step 4: activate the tag** as a cost allocation tag in Billing, then group by that tag in Cost Explorer.
+
+| Step | API or setting | Client |
+|---|---|---|
+| Create the profile | `CreateInferenceProfile` | `bedrock` |
+| Find profiles | `ListInferenceProfiles` (filter by type application) | `bedrock` |
+| Send S3 events to EventBridge | `PutBucketNotificationConfiguration` with an EventBridge configuration | `s3` |
+| Route the event | `PutRule`, `PutTargets` | `events` |
+| Start the workflow | `StartExecution` (called by EventBridge) | `stepfunctions` |
+| Invoke through the profile | `Converse` with the profile ARN as `modelId` | `bedrock-runtime` |
+| Read cost by tag | `GetCostAndUsage` | `ce` |
+
+### 2.6 Details that decide a harder version
+
+1. **Two kinds of inference profile.** System-defined (cross-Region) profiles route traffic for throughput and resilience. Application profiles are yours, taggable, and exist for cost and usage tracking. An application profile can wrap a cross-Region profile to get both.
+2. **Tags must be activated** as cost allocation tags before they appear in Cost Explorer. "Tags exist but Cost Explorer shows nothing" is this.
+3. **The bucket needs EventBridge notifications turned on.** The event's detail type is `Object Created`; the API that caused it (for example PutObject) appears as the reason inside the event.
+4. **IAM:** the function's role needs invoke permission on the application inference profile ARN and on the underlying model in every Region the profile can route to. EventBridge needs a role that can start the state machine.
+5. **Mapping clinic to profile belongs in configuration** (AppConfig, DynamoDB or a parameter), not in code, so onboarding a clinic needs no deployment.
+6. **Request metadata is the other attribution tool.** It labels each call in the invocation logs, which then need logging and analysis. Profiles win when the stem asks for cost with least effort; metadata wins when the stem asks for per-request detail.
+7. **The profile covers Bedrock charges only.** Transcribe Medical, Lambda and Step Functions cost per clinic would need their own tags or metering. The question asks only for summarization cost.
+8. **CloudWatch metrics are also reported per profile,** so the same profile gives per-clinic usage and latency.
+
+### 2.7 Practice questions
+
+**Q1.** A SaaS company serves 40 customers from one application that calls a Bedrock model on demand. Finance needs the monthly model cost per customer with the least operational overhead. What should the company do?
+
+- A. Enable model invocation logging and run a monthly Athena query grouped by customer
+- B. Create an application inference profile per customer with a customer tag, invoke the model through the matching profile, and activate the tag for cost allocation
+- C. Purchase Provisioned Throughput for each customer
+- D. Tag the Lambda function that calls Bedrock with each customer's ID
+
+**Answer: B.** A tagged application inference profile is the resource that carries on-demand model cost to Cost Explorer. A works but needs logging, storage and queries. C is far more expensive. D tags compute, and one function cannot carry 40 values of the same tag.
+
+**Q2.** A team created application inference profiles with a `team` tag two days ago and has invoked the model through them since. Cost Explorer does not offer `team` as a grouping. What is the most likely cause?
+
+- A. Inference profiles do not support tags
+- B. The tag has not been activated as a cost allocation tag
+- C. Cost data requires Provisioned Throughput
+- D. The profiles must be recreated from a cross-Region profile
+
+**Answer: B.** User-defined tags must be activated in Billing before they appear as a cost dimension.
+
+**Q3.** After switching a Lambda function from a model ID to an application inference profile ARN, calls fail with an access denied error. The role allows `bedrock:InvokeModel` on the foundation model ARN only. What should be changed?
+
+- A. Add the application inference profile ARN to the policy's resources, keeping the model ARN
+- B. Replace the role with the Bedrock service role
+- C. Add `bedrock:CreateInferenceProfile` to the policy
+- D. Move the function into a VPC
+
+**Answer: A.** Invocation through a profile is authorized against the profile and the underlying model. Creating profiles is a separate, build-time permission.
+
+**Q4.** Files uploaded to an S3 bucket must start a Step Functions state machine with the fewest components. Which design is correct?
+
+- A. Configure an S3 event notification with the state machine as the destination
+- B. Enable EventBridge notifications on the bucket and create a rule for Object Created events that targets the state machine
+- C. Poll the bucket from a scheduled Lambda function
+- D. Create a CloudTrail trail for S3 data events and a metric filter
+
+**Answer: B.** S3 cannot target Step Functions directly; EventBridge can. C and D add cost and delay.
+
+### 2.8 Rapid recall
+
+- Per-tenant Bedrock cost: application inference profile per tenant, tagged, used as the `modelId`.
+- System-defined profile: routing and throughput. Application profile: cost and usage tracking.
+- Activate the tag for cost allocation, then group by it in Cost Explorer.
+- Role needs the profile ARN and the model ARN.
+- S3 upload to Step Functions: EventBridge rule on Object Created. S3 notification targets are SNS, SQS, Lambda and EventBridge only.
+- Tagging Lambda tracks Lambda cost, not model cost.
+- Provisioned Throughput per tenant is never the cost-effective answer.
+
+### 2.9 Sources
+
+- [Create an application inference profile](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-create.html)
+- [Add cost allocation tags to Bedrock on-demand models](https://repost.aws/knowledge-center/bedrock-add-cost-allocation-tags)
+- [Start a Step Functions workflow from S3 events](https://docs.aws.amazon.com/step-functions/latest/dg/tutorial-cloudwatch-events-s3.html)
+
+Related notes: [What to monitor and where it comes from](../04-Domain4-Operational-Efficiency-Optimization.md#what-to-monitor-and-where-it-comes-from) · [Domain 4 tips](../04-Domain4-Operational-Efficiency-Optimization.md#tips-and-tricks) · [Bedrock capacity and profile APIs](07-API-List-by-Task.md#3-bedrock-models-capacity-guardrails-and-evaluation) · [Supporting service APIs](07-API-List-by-Task.md#15-supporting-services)
