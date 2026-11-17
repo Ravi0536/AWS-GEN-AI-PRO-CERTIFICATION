@@ -33,6 +33,18 @@ Back to the [index](../INDEX.md) · [Service list](06-Service-List-When-to-Use.m
   - [2.7 Practice questions](#27-practice-questions)
   - [2.8 Rapid recall](#28-rapid-recall)
   - [2.9 Sources](#29-sources)
+- [3. Hosting imported and custom models: Bedrock or SageMaker AI](#3-hosting-imported-and-custom-models-bedrock-or-sagemaker-ai)
+  - [3.1 Where it sits in the exam](#31-where-it-sits-in-the-exam)
+  - [3.2 The six ways to host a model](#32-the-six-ways-to-host-a-model)
+  - [3.3 Decision tree](#33-decision-tree)
+  - [3.4 Bedrock or SageMaker AI in one table](#34-bedrock-or-sagemaker-ai-in-one-table)
+  - [3.5 Limitations to memorize](#35-limitations-to-memorize)
+  - [3.6 SageMaker AI endpoint types](#36-sagemaker-ai-endpoint-types)
+  - [3.7 APIs for each path](#37-apis-for-each-path)
+  - [3.8 Exam tips and tricks](#38-exam-tips-and-tricks)
+  - [3.9 Practice questions](#39-practice-questions)
+  - [3.10 Rapid recall](#310-rapid-recall)
+  - [3.11 Sources](#311-sources)
 
 ---
 
@@ -707,3 +719,259 @@ response = bedrock_runtime.converse(
 - [Start a Step Functions workflow from S3 events](https://docs.aws.amazon.com/step-functions/latest/dg/tutorial-cloudwatch-events-s3.html)
 
 Related notes: [What to monitor and where it comes from](../04-Domain4-Operational-Efficiency-Optimization.md#what-to-monitor-and-where-it-comes-from) · [Domain 4 tips](../04-Domain4-Operational-Efficiency-Optimization.md#tips-and-tricks) · [Bedrock capacity and profile APIs](07-API-List-by-Task.md#3-bedrock-models-capacity-guardrails-and-evaluation) · [Supporting service APIs](07-API-List-by-Task.md#15-supporting-services)
+
+---
+
+## 3. Hosting imported and custom models: Bedrock or SageMaker AI
+
+"Custom model" means two different things, and the hosting options differ:
+
+- **Customized inside Bedrock:** you fine-tuned or distilled a Bedrock model. The weights never leave Bedrock.
+- **Your own weights:** you trained or fine-tuned an open-weights model elsewhere (SageMaker AI, on premises) and hold the files.
+
+### 3.1 Where it sits in the exam
+
+| Skill | Guide wording | What it tests here |
+|---|---|---|
+| 1.2.4 | "SageMaker AI to deploy domain-specific fine-tuned models", LoRA and adapters, Model Registry, rollback | Hosting and lifecycle of your own weights |
+| 2.2.1 | "Lambda for on-demand invocation, Bedrock provisioned throughput, SageMaker AI endpoints to implement hybrid solutions" | Choosing the hosting mode for the workload |
+| 2.2.2 | "Container-based deployment patterns optimized for memory, GPU utilization, token processing"; "model loading strategies" | Why large models need purpose-built containers |
+| 2.2.3 | "Smaller pre-trained models for specific tasks", model cascading | Matching the model to the task |
+
+### 3.2 The six ways to host a model
+
+| # | Option | What you bring | Who runs the servers | You pay for | Best when |
+|---|---|---|---|---|---|
+| 1 | **Bedrock on-demand** | Nothing; the model is in the catalog | AWS | Tokens | The model you need is already on Bedrock |
+| 2 | **Bedrock custom model + Provisioned Throughput** | A model fine-tuned or distilled in Bedrock | AWS | Model units per hour, optional 1 or 6 month commitment | Steady traffic on a Bedrock-customized model |
+| 3 | **Bedrock custom model, on-demand deployment** | A customized Amazon Nova model | AWS | Tokens | Variable traffic on a customized Nova model |
+| 4 | **Bedrock Custom Model Import** | Your own weights in a supported open architecture | AWS, serverless | Active model copies per minute, in 5-minute windows | You want your weights behind Bedrock APIs with no infrastructure |
+| 5 | **Bedrock Marketplace** | A third-party model from the catalog | AWS manages a SageMaker endpoint that you size | Instance hours plus any model fee | A specialized model that is not offered serverless |
+| 6 | **SageMaker AI endpoint** | Any model, any container | You choose instances, scaling and containers | Instance hours | You need control: GPU type, container, latency, network, any architecture |
+
+A seventh, self-managed option is containers on Amazon EKS, ECS or EC2. It is correct only when the stem states an existing platform or a control that SageMaker AI cannot give.
+
+### 3.3 Decision tree
+
+```mermaid
+graph TD
+    A{Model already in the<br/>Bedrock catalog?} -->|yes| B[Bedrock on-demand<br/>nothing to host]
+    A -->|no| C{Customized inside Bedrock?<br/>fine-tuned or distilled}
+    C -->|yes| D[Provisioned Throughput,<br/>or on-demand deployment for Nova]
+    C -->|no| E{Own weights in a supported<br/>open architecture, text generation,<br/>cold starts acceptable?}
+    E -->|yes| F[Bedrock Custom Model Import<br/>serverless, scales to zero]
+    E -->|no| G{Third-party model listed in<br/>Bedrock Marketplace?}
+    G -->|yes| H[Bedrock Marketplace<br/>endpoint you size, Bedrock APIs]
+    G -->|no| I[SageMaker AI endpoint<br/>any model, any container]
+```
+
+**How to read it:** go down only as far as you must. Each step down adds control and adds work. "Least operational overhead" stops early; a stated control requirement pushes you to the bottom.
+
+### 3.4 Bedrock or SageMaker AI in one table
+
+| Question | Bedrock (Custom Model Import) | SageMaker AI endpoint |
+|---|---|---|
+| Infrastructure to manage | None | Instance type, count, scaling, container |
+| Which models | Supported architectures only | Anything you can put in a container |
+| Embedding models | Not supported | Supported |
+| Scale to zero | Automatic after 5 idle minutes | Possible with asynchronous inference or inference components; you configure it |
+| Cold start | Yes, after idle | None while instances are running |
+| Guaranteed warm capacity | No equivalent of Provisioned Throughput | Yes, keep instances running |
+| Invocation API | `InvokeModel` (and `Converse` for most architectures) | `InvokeEndpoint` |
+| Bedrock features around it | Native | `ApplyGuardrail` and your own code |
+| GPU and container choice | Chosen for you | Yours |
+| A/B tests, shadow tests, blue/green with rollback | No | Yes |
+| Many LoRA adapters on one base model | No | Yes, inference components |
+| Network isolation | Bedrock VPC endpoints | Endpoint in your VPC, network isolation mode |
+| Cost shape | Pay only while a copy is active | Pay while instances run |
+| Stem keywords | "Serverless", "no infrastructure", "same API as our other Bedrock models", "sporadic traffic" | "Custom container", "specific GPU", "low and consistent latency", "embedding model", "A/B test", "hybrid" |
+
+**One-line rule:** choose Bedrock when a managed model behind an API is enough; choose SageMaker AI when the stem names something you must control.
+
+### 3.5 Limitations to memorize
+
+**Bedrock Custom Model Import**
+
+| Limitation | Detail |
+|---|---|
+| Architectures | Mistral, Mixtral, Flan, Llama 2 to 3.3 and Mllama, GPTBigCode, Qwen 2 to 3, GPT-OSS. Anything else cannot be imported |
+| Model type | **No embedding models** |
+| Size | Weights under 200 GB for text models, 100 GB for multimodal; context length under 128K |
+| Format | Hugging Face format: `.safetensors` weights, `config.json`, tokenizer files; from S3 or SageMaker AI |
+| Regions | US East (N. Virginia), US East (Ohio), US West (Oregon), Europe (Frankfurt) |
+| Capacity | On-demand only; **no Provisioned Throughput equivalent** |
+| Cold start | Scales to zero after 5 minutes idle; the first call can return `ModelNotReadyException`. Fix: retry with backoff, or keep a light steady load |
+| Not available | Batch inference, CloudFormation |
+| Billing | No charge to import; billed per active model copy per minute in 5-minute windows, sized in custom model units |
+| Licence | You are responsible for the model's licence terms |
+
+**Models customized inside Bedrock**
+
+| Limitation | Detail |
+|---|---|
+| Base models | Only the models that support fine-tuning or distillation |
+| Hosting | Models other than Amazon Nova need **Provisioned Throughput**. Customized Nova models can also use on-demand deployment |
+| Invocation | Use the provisioned model ARN or the deployment ARN as the model ID; the custom model ARN alone is rejected |
+| Weights | Cannot be downloaded |
+
+**Bedrock Marketplace**
+
+| Limitation | Detail |
+|---|---|
+| Not serverless | The model runs on a SageMaker endpoint with instances you choose and pay for |
+| Feature support | Bedrock tools work only if the model is compatible with the Converse API |
+| Subscription | You accept the provider's terms and price |
+
+**SageMaker AI endpoints**
+
+| Limitation | Detail |
+|---|---|
+| Operations | You size, scale, patch containers and monitor |
+| Idle cost | Real-time endpoints bill while running |
+| Serverless endpoints | **No GPU**; small CPU models only; cold starts |
+| Bedrock features | Not native. Guardrails through `ApplyGuardrail`; no Knowledge Bases or Agents wiring for free |
+| Startup | Large models load slowly; scaling out is not instant |
+
+### 3.6 SageMaker AI endpoint types
+
+| Type | Use when | Watch for |
+|---|---|---|
+| Real-time | Interactive, steady, low latency | Pays while running |
+| Real-time with inference components | Several models or many LoRA adapters share GPUs; each scales separately, including to zero | More to configure |
+| Asynchronous | Large payloads, long processing, bursty traffic; scales to zero | Result arrives in S3, not in the response |
+| Serverless | Intermittent traffic on small CPU models | No GPU; cold starts |
+| Batch transform | Whole dataset offline | No endpoint; not interactive |
+
+Large language models go in a **large model inference container** (purpose-built for GPU memory, batching and token streaming) on a real-time endpoint or inference component. That is the Skill 2.2.2 answer.
+
+### 3.7 APIs for each path
+
+| Path | Build | Invoke |
+|---|---|---|
+| Custom Model Import | `CreateModelImportJob`, `GetImportedModel` | `InvokeModel` with the imported model ARN |
+| Bedrock customization | `CreateModelCustomizationJob` | After the hosting step below |
+| Provisioned Throughput | `CreateProvisionedModelThroughput` | `Converse` with the provisioned model ARN |
+| On-demand deployment (Nova) | `CreateCustomModelDeployment` | `Converse` with the deployment ARN |
+| Bedrock Marketplace | `CreateMarketplaceModelEndpoint`, or `RegisterMarketplaceModelEndpoint` for an existing SageMaker endpoint | `Converse` with the endpoint ARN |
+| SageMaker AI | `CreateModel`, `CreateEndpointConfig`, `CreateEndpoint`, optionally `CreateInferenceComponent` | `InvokeEndpoint`, `InvokeEndpointWithResponseStream`, `InvokeEndpointAsync` |
+| Multi-Region custom model | `CreateModelCopyJob` | Same as the source |
+
+### 3.8 Exam tips and tricks
+
+1. **Check the catalog first.** If the model is already on Bedrock, hosting it yourself is the distractor.
+2. **"Fine-tuned in Bedrock" and "cannot invoke it" means no hosting step yet.** Provisioned Throughput, or on-demand deployment for Nova.
+3. **"Own weights" plus "serverless" or "no infrastructure" is Custom Model Import,** provided the architecture is supported.
+4. **Embedding model, unsupported architecture or a specific GPU is SageMaker AI.**
+5. **"Low and consistent latency" rules out anything that scales to zero.** That removes Custom Model Import after idle, serverless endpoints and asynchronous endpoints.
+6. **`ModelNotReadyException` on an imported model is a cold start, not a quota.** Retry with backoff. Provisioned Throughput is not available for imported models.
+7. **"Sporadic traffic, lowest cost" favours scale to zero:** Custom Model Import, or SageMaker asynchronous inference.
+8. **Serverless SageMaker endpoints have no GPU,** so they are wrong for large language models.
+9. **Many fine-tuned variants on one base model is inference components with LoRA adapters,** not one endpoint each.
+10. **A/B, shadow and blue/green with automatic rollback are SageMaker AI endpoint features.**
+11. **"Hybrid" in Skill 2.2.1 means both:** Bedrock for managed models, a SageMaker AI endpoint for the model Bedrock cannot host, behind one application.
+12. **Guardrails on a SageMaker-hosted model is `ApplyGuardrail`.**
+13. **EKS, ECS or EC2 hosting is right only when the stem gives a reason** such as an existing Kubernetes platform.
+
+### 3.9 Practice questions
+
+**Q1.** A company fine-tuned an open-weights Llama model on SageMaker AI. Traffic is a few requests per hour. The team wants to call it through the same API as its other Bedrock models and manage no infrastructure. Which solution is most cost-effective?
+
+- A. Deploy the model to a SageMaker AI real-time endpoint on a GPU instance
+- B. Import the model with Bedrock Custom Model Import and invoke it on demand
+- C. Purchase Bedrock Provisioned Throughput for the model
+- D. Deploy the model to a SageMaker AI serverless endpoint
+
+**Answer: B.** Llama is a supported architecture, import is serverless and scales to zero between requests. A pays for an idle GPU. C does not apply to imported models. D has no GPU.
+
+**Q2.** A team fine-tuned a non-Nova model in Amazon Bedrock. Calls that use the custom model ARN fail validation. What is missing?
+
+- A. A cross-Region inference profile
+- B. Provisioned Throughput for the custom model, then invocation with the provisioned model ARN
+- C. A SageMaker AI endpoint
+- D. Model invocation logging
+
+**Answer: B.** A Bedrock-customized model needs a hosting step. For models other than Nova that is Provisioned Throughput.
+
+**Q3.** An application calls a model brought in through Custom Model Import. The first request after a quiet period fails with `ModelNotReadyException`; later requests succeed. What should the developer do?
+
+- A. Request a quota increase
+- B. Purchase Provisioned Throughput for the imported model
+- C. Add retries with exponential backoff, and keep a light steady load if the delay is unacceptable
+- D. Re-import the model
+
+**Answer: C.** The model copy was scaled to zero and is loading. Provisioned Throughput has no equivalent for imported models.
+
+**Q4.** A company needs to host a custom embedding model that it trained itself, with a specific GPU instance type and traffic inside its VPC. Which option fits?
+
+- A. Bedrock Custom Model Import
+- B. Bedrock on-demand
+- C. A SageMaker AI real-time endpoint
+- D. Bedrock batch inference
+
+**Answer: C.** Custom Model Import does not support embedding models and gives no instance choice. SageMaker AI gives both.
+
+**Q5.** A real-time assistant uses a self-trained model and must answer within 500 milliseconds at all hours, including after long quiet periods. Which hosting choice meets the requirement?
+
+- A. Bedrock Custom Model Import
+- B. A SageMaker AI serverless endpoint
+- C. A SageMaker AI asynchronous endpoint that scales to zero
+- D. A SageMaker AI real-time endpoint with a minimum of one running instance
+
+**Answer: D.** Every other option can be cold when the request arrives.
+
+**Q6.** A company serves 60 customer-specific fine-tuned variants of one base model. Most variants receive little traffic. Which design minimizes cost while keeping each variant available?
+
+- A. One SageMaker AI endpoint per variant
+- B. One endpoint with the base model and each LoRA adapter as an inference component
+- C. Sixty Bedrock Provisioned Throughput purchases
+- D. One Lambda function per variant that loads the model on each call
+
+**Answer: B.** Adapters share the base model's GPUs and scale separately. A and C multiply cost by 60. D cannot load a large model per request.
+
+**Q7.** An application uses Bedrock models for most tasks. One task needs a proprietary model that is not on Bedrock and requires a custom inference container. The team wants a single application path. Which architecture matches?
+
+- A. Move every model to SageMaker AI
+- B. Keep Bedrock for the managed models and host the proprietary model on a SageMaker AI endpoint, with a routing layer in front
+- C. Import the proprietary model with Custom Model Import
+- D. Use Bedrock Intelligent Prompt Routing
+
+**Answer: B.** That is the hybrid pattern of Skill 2.2.1. A custom container rules out import, and prompt routing chooses between Bedrock models only.
+
+**Q8.** A team wants to shift 10 percent of traffic to a new version of its self-hosted model and roll back automatically if errors rise. Which capability provides this with the least custom code?
+
+- A. Bedrock agent aliases
+- B. SageMaker AI endpoint deployment guardrails with canary traffic shifting and alarm-based rollback
+- C. Bedrock Custom Model Import versions
+- D. An AppConfig feature flag in each client
+
+**Answer: B.** Canary shifting with automatic rollback is built into SageMaker AI endpoint updates.
+
+**Q9.** A startup imported a supported model into Bedrock and now wants to process 2 million prompts overnight at the lowest cost with Bedrock batch inference. What is the problem?
+
+- A. Batch inference requires Provisioned Throughput
+- B. Batch inference is not available for models brought in through Custom Model Import
+- C. Batch inference requires a cross-Region inference profile
+- D. There is no problem
+
+**Answer: B.** Batch inference is on the list of features that Custom Model Import does not support. Alternatives are on-demand calls with controlled concurrency, or SageMaker AI batch transform.
+
+### 3.10 Rapid recall
+
+- Catalog model: Bedrock on-demand. Nothing to host.
+- Customized in Bedrock: Provisioned Throughput; Nova also on-demand deployment.
+- Own weights, supported architecture: Custom Model Import. Serverless, scales to zero, cold start, no embeddings, no Provisioned Throughput, no batch.
+- Third-party specialized model: Bedrock Marketplace on an endpoint you size.
+- Anything else, or any stated control need: SageMaker AI endpoint.
+- Always warm: real-time endpoint. Bursty and large: asynchronous. Many adapters: inference components. Offline: batch transform. Serverless: no GPU.
+- `ModelNotReadyException`: retry.
+- Guardrails outside Bedrock: `ApplyGuardrail`.
+
+### 3.11 Sources
+
+- [Custom Model Import](https://docs.aws.amazon.com/bedrock/latest/userguide/model-customization-import-model.html)
+- [ModelNotReadyException with imported models](https://repost.aws/knowledge-center/bedrock-imported-models-modelnotreadyexception)
+- [Inference for fine-tuned models](https://repost.aws/knowledge-center/bedrock-fine-tuning-errors)
+- [Deploy a custom model for on-demand inference](https://docs.aws.amazon.com/nova/latest/userguide/deploying-custom-model.html)
+- [Amazon Bedrock FAQs (Bedrock Marketplace)](https://aws.amazon.com/bedrock/faqs/)
+
+Related notes: [Fine-tuning](../REVISIT-Topics.md#1-fine-tuning) · [SageMaker AI capabilities](06-Service-List-When-to-Use.md#2-amazon-sagemaker-ai) · [SageMaker APIs](07-API-List-by-Task.md#8-amazon-sagemaker-ai-and-named-services) · [Domain 2 deployment strategies](../02-Domain2-Implementation-Integration.md) · [Domain 1 Task 1.2](../01-Domain1-FM-Integration-Data-Compliance.md#task-12--select-and-configure-fms)

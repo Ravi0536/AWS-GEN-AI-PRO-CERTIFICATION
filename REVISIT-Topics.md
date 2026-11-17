@@ -20,6 +20,8 @@ Back to the [index](INDEX.md).
 | 10 | 2026-11-17 | Service list and API list: Bedrock, SageMaker AI and its named services, Glue, Comprehend, BDA, Lex, Amazon Q, other AI and ML services | All domains. The Guide column in the service list shows the skill for each service | To revisit |
 | 11 | 2026-11-17 | Amazon Comprehend custom classification (deep dive with practice questions) | Named use in Domain 1, Skill 1.6.2 (intent recognition). Also fits Domain 2, Skill 2.4.4 (content-based routing) and Skill 2.2.3 (model cascading); Domain 1, Skill 1.4.2 (domain classification tags); Domain 3, Skill 3.1.1 (custom moderation) | To revisit |
 | 12 | 2026-11-17 | Per-tenant cost tracking with application inference profiles, and starting a workflow from S3 uploads through EventBridge | Not named. Cost tracking fits Domain 4, Task 4.3, Skill 4.3.2 (token usage monitoring). The trigger fits Domain 2, Task 2.3, Skill 2.3.2 (EventBridge event-driven integrations) | To revisit |
+| 13 | 2026-11-17 | Hosting imported and custom models: Bedrock or SageMaker AI, with limitations | Domain 1, Task 1.2, Skill 1.2.4 (deploy fine-tuned models, LoRA, rollback). Domain 2, Task 2.2, Skills 2.2.1 (Provisioned Throughput, SageMaker AI endpoints, hybrid), 2.2.2 (container-based deployment for LLMs) and 2.2.3 | To revisit |
+| 14 | 2026-11-17 | End-to-end GenAI pipelines: what to use at each stage (ingestion, retrieval, generation, agents, hosting, safety, monitoring, evaluation) | All five domains. Each stage table carries the skill number | To revisit |
 
 ## Study notes per topic
 
@@ -306,3 +308,28 @@ Back to the [index](INDEX.md).
 - **In the study pack:** [Architecture](Deep_dives/Deep_dive_services.md#22-architecture) · [Why each answer is right](Deep_dives/Deep_dive_services.md#23-why-each-answer-is-right) · [Options that look right and are not](Deep_dives/Deep_dive_services.md#24-options-that-look-right-and-are-not) · [How to build it](Deep_dives/Deep_dive_services.md#25-how-to-build-it) · [Practice questions](Deep_dives/Deep_dive_services.md#27-practice-questions) · [What to monitor and where it comes from](04-Domain4-Operational-Efficiency-Optimization.md#what-to-monitor-and-where-it-comes-from)
 - **Go deeper:** create two application inference profiles with different tags, invoke each once, and find them with `ListInferenceProfiles`; turn on EventBridge notifications for a test bucket and write the rule.
 - **AWS docs:** [Create an application inference profile](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-create.html) · [Add cost allocation tags to Bedrock on-demand models](https://repost.aws/knowledge-center/bedrock-add-cost-allocation-tags) · [Start a Step Functions workflow from S3 events](https://docs.aws.amazon.com/step-functions/latest/dg/tutorial-cloudwatch-events-s3.html)
+
+### 13. Hosting imported and custom models: Bedrock or SageMaker AI
+
+- **Exam angle:** the stem describes a model (catalog, fine-tuned in Bedrock, or your own weights) and a constraint (no infrastructure, consistent latency, specific GPU, sporadic traffic). You pick the hosting option. Full notes, a decision tree, limitation tables and nine practice questions are in the [deep dive](Deep_dives/Deep_dive_services.md#3-hosting-imported-and-custom-models-bedrock-or-sagemaker-ai).
+- **Rules:**
+  - Model in the catalog: Bedrock on-demand. Customized in Bedrock: Provisioned Throughput, or on-demand deployment for Nova.
+  - Own weights in a supported architecture with no infrastructure: Bedrock Custom Model Import. It scales to zero, has cold starts, and supports no embedding models, no Provisioned Throughput and no batch inference.
+  - A stated control need (custom container, GPU type, embedding model, always-warm latency, A/B or rollback): SageMaker AI endpoint.
+  - `ModelNotReadyException` on an imported model is a cold start: retry with backoff.
+  - SageMaker serverless endpoints have no GPU. Many adapters on one base model means inference components.
+- **In the study pack:** [The six ways to host a model](Deep_dives/Deep_dive_services.md#32-the-six-ways-to-host-a-model) · [Decision tree](Deep_dives/Deep_dive_services.md#33-decision-tree) · [Bedrock or SageMaker AI in one table](Deep_dives/Deep_dive_services.md#34-bedrock-or-sagemaker-ai-in-one-table) · [Limitations to memorize](Deep_dives/Deep_dive_services.md#35-limitations-to-memorize) · [Practice questions](Deep_dives/Deep_dive_services.md#39-practice-questions) · [Fine-tuning (topic 1)](#1-fine-tuning)
+- **Go deeper:** import a small supported model with Custom Model Import, call it, wait ten minutes and call it again to see the cold start; then deploy the same model to a SageMaker AI endpoint and compare the steps and the bill.
+- **AWS docs:** [Custom Model Import](https://docs.aws.amazon.com/bedrock/latest/userguide/model-customization-import-model.html) · [ModelNotReadyException with imported models](https://repost.aws/knowledge-center/bedrock-imported-models-modelnotreadyexception) · [Deploy a custom model for on-demand inference](https://docs.aws.amazon.com/nova/latest/userguide/deploying-custom-model.html)
+
+### 14. End-to-end GenAI pipelines: what to use at each stage
+
+- **Exam angle:** most questions describe one stage of one pipeline and ask what belongs there. Placing the question (which pipeline, which stage) usually removes two options before you compare services. The full map with ten diagrams is in [GenAI pipelines stage by stage](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md).
+- **Rules:**
+  - Two build-time tracks (index the data; customize and host the model), one run-time path (retrieve, build prompt, generate, act and deliver), and three wraps (safety, monitoring, evaluation).
+  - At every stage the managed choice is the default; the custom or SageMaker AI choice needs a stated reason.
+  - Vector store, workflow, front door, configuration and observability services are the same whether the model runs on Bedrock or SageMaker AI.
+  - A symptom points to a stage before it points to a service: missing table data is extraction, a buried passage is reranking, a late full answer is delivery.
+- **In the study pack:** [The whole picture](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#1-the-whole-picture) · [Ingestion](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#2-ingestion-pipeline) · [Retrieval and generation](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#3-retrieval-and-generation-pipeline) · [Agent](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#4-agent-pipeline) · [Bedrock or SageMaker AI at each stage](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#11-bedrock-or-sagemaker-ai-at-each-stage) · [Which pipeline is the question describing](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#13-which-pipeline-is-the-question-describing) · [Stage drills](Deep_dives/08-GenAI-Pipelines-Stage-by-Stage.md#14-stage-drills)
+- **Go deeper:** redraw the whole-picture diagram from memory, then for each practice question you get wrong, write down the pipeline and stage before reading the explanation.
+- **AWS docs:** [Exam guide: domains and tasks](https://docs.aws.amazon.com/aws-certification/latest/ai-professional-01/ai-professional-01.html) · [In-scope services](https://docs.aws.amazon.com/aws-certification/latest/ai-professional-01/aip-01-in-scope-services.html)
